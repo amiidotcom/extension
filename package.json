@@ -1,0 +1,125 @@
+{
+  "name": "claude-code-vscode",
+  "displayName": "Claude Code for VSCode",
+  "description": "Integrate Claude Code API with VSCode chat and tool access",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languageModelChatProviders": [
+      {
+        "displayName": "Chutes",
+        "vendor": "chutes",
+        "label": "Claude via Chutes.ai",
+        "icon": "media/claude-icon.png"
+      }
+    ],
+    "commands": [
+      {
+        "command": "claude-code.configure",
+        "title": "Configure Claude Code Extension",
+        "category": "Claude Code"
+      },
+      {
+        "command": "claude-code.setApiKey",
+        "title": "Set Claude API Key",
+        "category": "Claude Code"
+      }
+    ],
+    "configuration": {
+      "title": "Claude Code",
+      "properties": {
+        "claude-code.apiUrl": {
+          "type": "string",
+          "default": "https://claude.monarchrise.dev",
+          "description": "Claude API proxy URL"
+        },
+        "claude-code.model": {
+          "type": "string",
+          "enum": ["moonshotai/Kimi-K2-Thinking", "MiniMaxAI/MiniMax-M2", "zai-org/GLM-4.6"],
+          "default": "moonshotai/Kimi-K2-Thinking",
+          "description": "Model to use for Claude API (direct model IDs for proxy)"
+        },
+        "claude-code.maxTokens": {
+          "type": "number",
+          "default": 4096,
+          "description": "Maximum tokens in responses"
+        },
+        "claude-code.enableTools": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable VSCode tool execution"
+        },
+        "claude-code.system": {
+          "type": "string",
+          "default": "",
+          "description": "System prompt for the conversation (optional)"
+        },
+        "claude-code.temperature": {
+          "type": "number",
+          "default": 1.0,
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Controls randomness: 0.0 = deterministic, 1.0 = maximum randomness"
+        },
+        "claude-code.stopSequences": {
+          "type": "array",
+          "default": [],
+          "items": {
+            "type": "string"
+          },
+          "description": "Custom sequences that will cause the model to stop generating"
+        },
+        "claude-code.topP": {
+          "type": "number",
+          "default": 1.0,
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "Nucleus sampling: 0.0 to 1.0 (default 1.0)"
+        },
+        "claude-code.topK": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "description": "Only sample from top K tokens: 0 = disabled (default)"
+        },
+        "claude-code.metadataUserId": {
+          "type": "string",
+          "default": "",
+          "description": "User ID for metadata tracking (optional)"
+        },
+        "claude-code.toolChoice": {
+          "type": "string",
+          "default": "auto",
+          "enum": ["auto", "any"],
+          "description": "Control tool usage: auto = model decides, any = force tool use"
+        }
+        
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "vscode-test"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.106.1",
+    "@types/node": "20.x",
+    "@typescript-eslint/eslint-plugin": "^7.14.1",
+    "@typescript-eslint/parser": "^7.14.1",
+    "eslint": "^8.57.0",
+    "typescript": "^5.4.5"
+  }
+}
