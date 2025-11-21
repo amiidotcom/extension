@@ -294,6 +294,30 @@ src/
 3. Add input validation and execution logic
 4. Update this README documentation
 
+## Privacy & Security
+
+⚠️ **Important**: This repository should be kept **PRIVATE** as it may contain:
+- API keys and configuration files
+- Personal development settings
+- Sensitive workspace information
+
+### Privacy Checklist
+
+- [ ] Repository is set to **Private** on GitHub
+- [ ] No API keys are committed to the repository
+- [ ] Sensitive configuration files are in `.gitignore`
+- [ ] Environment variables are used for secrets
+- [ ] Code is reviewed before committing
+
+### Making Repository Private on GitHub
+
+1. Go to your repository on GitHub
+2. Click **Settings** tab
+3. Scroll down to **Danger Zone**
+4. Click **Change repository visibility**
+5. Select **Make private**
+6. Confirm the change
+
 ## License
 
 MIT License - see LICENSE file for details

@@ -1,0 +1,25 @@
+# GitHub Actions workflow to ensure repository privacy settings
+name: Repository Privacy Check
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  privacy-check:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.repository == github.event.repository.full_name
+    
+    steps:
+    - name: Check repository visibility
+      run: |
+        echo "Repository visibility: ${{ github.event.repository.visibility }}"
+        if [ "${{ github.event.repository.visibility }}" != "private" ]; then
+          echo "⚠️ WARNING: This repository should be PRIVATE!"
+          echo "Please make sure to set the repository to private in GitHub settings."
+          exit 1
+        else
+          echo "✅ Repository is private - good!"
+        fi
