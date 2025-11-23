@@ -11,7 +11,8 @@ export interface ApiProviderInterface {
     messages: ClaudeMessage[],
     tools?: ClaudeTool[],
     onStream?: (chunk: string) => void,
-    modelId?: string
+    modelId?: string,
+    onToolCall?: (toolCall: {id: string, name: string, input: any}) => void
   ): Promise<ClaudeResponse>;
   
   sendWithToolResults(
@@ -107,7 +108,8 @@ export class ApiProviderManager {
     messages: ClaudeMessage[],
     tools?: ClaudeTool[],
     onStream?: (chunk: string) => void,
-    modelId?: string
+    modelId?: string,
+    onToolCall?: (toolCall: {id: string, name: string, input: any}) => void
   ): Promise<ClaudeResponse> {
     // Refresh provider from config to ensure we have the latest setting
     this.refreshProviderFromConfig();
@@ -119,7 +121,7 @@ export class ApiProviderManager {
       console.log(`[ApiProviderManager] Using provider: ${this.getProviderName()}`);
       console.log(`[ApiProviderManager] Endpoint: ${this.getEndpointUrl()}`);
       
-      return await client.chat(messages, tools, onStream, modelId);
+      return await client.chat(messages, tools, onStream, modelId, onToolCall);
     } catch (error) {
       console.error(`[ApiProviderManager] Error with ${this.getProviderName()}:`, error);
       throw error;

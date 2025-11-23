@@ -33,7 +33,7 @@ export class ClaudeLanguageModelProvider implements vscode.LanguageModelChatProv
           imageInput: false
         },
         tooltip: 'Claude 3.5 Sonnet - Advanced reasoning and coding (mapped to moonshotai/Kimi-K2-Thinking)',
-        detail: 'by Anthropic'
+        detail: 'by Chutes Ai'
       },
       {
         id: 'zai-org/GLM-4.6',
@@ -47,7 +47,7 @@ export class ClaudeLanguageModelProvider implements vscode.LanguageModelChatProv
           imageInput: false
         },
         tooltip: 'Claude 3 Opus - Most capable for complex tasks (mapped to MiniMaxAI/MiniMax-M2)',
-        detail: 'by Anthropic'
+        detail: 'by Chutes Ai'
       },
       {
         id: 'Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8',
@@ -61,7 +61,7 @@ export class ClaudeLanguageModelProvider implements vscode.LanguageModelChatProv
           imageInput: false
         },
         tooltip: 'Claude 3 Haiku - Fast and efficient (mapped to zai-org/GLM-4.6)',
-        detail: 'by Anthropic'
+        detail: 'by Chutes Ai'
       }
     ];
   }
@@ -204,7 +204,31 @@ export class ClaudeLanguageModelProvider implements vscode.LanguageModelChatProv
           // Report streaming response to VSCode as LanguageModelTextPart
           progress.report(new vscode.LanguageModelTextPart(chunk));
         },
-        modelId  // <-- This is the new parameter
+        modelId,  // <-- This is the new parameter
+        // Tool call callback - hide tool calls from user, report to VS Code
+        (toolCall: {id: string, name: string, input: any}) => {
+          console.log('[Claude Provider] Tool call detected (hidden from user):', toolCall.name);
+          
+          // Map the function name to actual VS Code tool name
+          const mappedToolName = this.mapToolName(toolCall.name);
+          
+          // Extract just the numeric ID part for VS Code (e.g., "3" from "functions.list_files:3")
+          const vsCodeToolId = toolCall.id.split(':')[1] || toolCall.id;
+          
+          const toolCallPart = new vscode.LanguageModelToolCallPart(
+            vsCodeToolId,
+            mappedToolName,
+            toolCall.input
+          );
+          
+          console.log('[Claude Provider] Reporting tool call to VS Code:', {
+            callId: toolCallPart.callId,
+            name: toolCallPart.name,
+            input: toolCallPart.input
+          });
+          
+          progress.report(toolCallPart);
+        }
       ).then((response: any) => {
         if (!isResolved) {
           fullResponse = response;

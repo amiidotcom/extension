@@ -12,7 +12,8 @@ export class ClaudeApiClient {
     messages: ClaudeMessage[],
     tools?: ClaudeTool[],
     onStream?: (chunk: string) => void,
-    modelId?: string  // Optional model ID to override config
+    modelId?: string,  // Optional model ID to override config
+    onToolCall?: (toolCall: {id: string, name: string, input: any}) => void
   ): Promise<ClaudeResponse> {
     const config = this.config.getConfig();
     const apiKey = await this.config.getApiKey(this.context);

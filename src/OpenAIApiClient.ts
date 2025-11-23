@@ -62,11 +62,13 @@ export interface OpenAIResponse {
     message?: {
       role: 'assistant';
       content: string | null;
+      reasoning_content?: string;
       tool_calls?: OpenAIToolCall[];
     };
     delta?: {
       role?: 'assistant';
       content?: string;
+      reasoning_content?: string;
       tool_calls?: OpenAIToolCall[];
     };
     finish_reason?: 'stop' | 'length' | 'tool_calls' | 'content_filter';
@@ -88,7 +90,8 @@ export class OpenAIApiClient {
     messages: ClaudeMessage[],
     tools?: ClaudeTool[],
     onStream?: (chunk: string) => void,
-    modelId?: string
+    modelId?: string,
+    onToolCall?: (toolCall: {id: string, name: string, input: any}) => void
   ): Promise<ClaudeResponse> {
     const config = this.config.getConfig();
     const apiKey = await this.getOpenAIApiKey();
@@ -146,7 +149,7 @@ export class OpenAIApiClient {
       }
 
       if (onStream && response.body) {
-        return await this.handleStreamingResponse(response.body, onStream);
+        return await this.handleStreamingResponse(response.body, onStream, onToolCall);
       } else {
         const data = await response.json() as OpenAIResponse;
         return this.convertOpenAIResponseToClaude(data);
@@ -242,6 +245,14 @@ export class OpenAIApiClient {
 
     const content: ClaudeResponse['content'] = [];
 
+    // Add thinking content first (if any)
+    if (choice.message.reasoning_content) {
+      content.push({
+        type: 'text',
+        text: `🤔\n**Thinking Process:**\n${choice.message.reasoning_content}\n\n\n`
+      });
+    }
+
     // Add text content
     if (choice.message.content) {
       content.push({
@@ -293,13 +304,15 @@ export class OpenAIApiClient {
 
   private async handleStreamingResponse(
     body: ReadableStream<Uint8Array>,
-    onStream: (chunk: string) => void
+    onStream: (chunk: string) => void,
+    onToolCall?: (toolCall: {id: string, name: string, input: any}) => void
   ): Promise<ClaudeResponse> {
     const reader = body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';
     let fullResponse: ClaudeResponse | null = null;
     let currentContent = '';
+    let currentThinkingContent = '';
     let currentToolCalls: OpenAIToolCall[] = [];
 
     try {
@@ -325,11 +338,29 @@ export class OpenAIApiClient {
 
               // Handle text content
               if (choice.delta?.content) {
+                const wasEmpty = currentContent.length === 0;
                 currentContent += choice.delta.content;
+                
+                // Add transition only once, before first main content (if we have thinking content)
+                if (wasEmpty && currentThinkingContent.length > 0) {
+                  onStream(`\n\n**Response:**\n`);
+                }
                 onStream(choice.delta.content);
               }
 
-              // Handle tool calls
+              // Handle thinking/reasoning content
+              if (choice.delta?.reasoning_content) {
+                const wasEmpty = currentThinkingContent.length === 0;
+                currentThinkingContent += choice.delta.reasoning_content;
+                
+                // Show thinking header only once, before first thinking content
+                if (wasEmpty) {
+                  onStream(`🤔 **Thinking Process:**\n`);
+                }
+                onStream(choice.delta.reasoning_content);
+              }
+
+              // Handle tool calls - hide from user stream, report via callback
               if (choice.delta?.tool_calls) {
                 for (const deltaToolCall of choice.delta.tool_calls) {
                   let existingCall = currentToolCalls.find(tc => tc.id === deltaToolCall.id);
@@ -351,6 +382,22 @@ export class OpenAIApiClient {
                   }
                   if (deltaToolCall.function?.arguments) {
                     existingCall.function.arguments += deltaToolCall.function.arguments;
+                  }
+
+                  // When tool call is complete, report it via callback (don't stream to user)
+                  if (existingCall.function.name && existingCall.function.arguments) {
+                    try {
+                      const input = JSON.parse(existingCall.function.arguments);
+                      if (onToolCall) {
+                        onToolCall({
+                          id: existingCall.id,
+                          name: existingCall.function.name,
+                          input: input
+                        });
+                      }
+                    } catch (e) {
+                      console.error('[OpenAIApiClient] Failed to parse tool arguments:', e);
+                    }
                   }
                 }
               }
@@ -384,6 +431,14 @@ export class OpenAIApiClient {
 
     if (!fullResponse) {
       throw new Error('No response received from streaming API');
+    }
+
+    // Add thinking content properly formatted (if any)
+    if (currentThinkingContent) {
+      fullResponse.content.push({
+        type: 'text',
+        text: `🤔\n**Thinking Process:**\n${currentThinkingContent}\n\n\n`
+      });
     }
 
     // Add accumulated text content
