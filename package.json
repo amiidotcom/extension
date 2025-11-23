@@ -52,6 +52,11 @@
         "command": "claude-code.debugProvider",
         "title": "Debug Provider Detection",
         "category": "Claude Code"
+      },
+      {
+        "command": "claude-code.showConfigurationStatus",
+        "title": "Show Configuration Status",
+        "category": "Claude Code"
       }
     ],
     "configuration": {

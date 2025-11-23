@@ -132,6 +132,10 @@ Provider Status:
     );
   });
 
+  const showConfigurationStatusCommand = vscode.commands.registerCommand('claude-code.showConfigurationStatus', async () => {
+    await configManager.showConfigurationStatus(context);
+  });
+
   // Watch for configuration changes
   const configChangeSubscription = vscode.workspace.onDidChangeConfiguration(e => {
     if (e.affectsConfiguration('claude-code')) {
@@ -153,6 +157,7 @@ Provider Status:
     setOpenAIApiKeyCommand,
     showProviderStatusCommand,
     debugProviderCommand,
+    showConfigurationStatusCommand,
     configChangeSubscription
   );
 

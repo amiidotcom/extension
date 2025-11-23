@@ -169,45 +169,116 @@ Focus on completing the user's requests efficiently and effectively.`;
     return selection?.value;
   }
 
+  // Show configuration status
+  async showConfigurationStatus(context: vscode.ExtensionContext): Promise<void> {
+    const config = this.getConfig();
+    const claudeApiKey = await this.getApiKey(context);
+    const openaiApiKey = await this.getOpenAIApiKey(context);
+    
+    const statusMessage = `
+Current Configuration:
+• Provider: ${config.provider}
+• Model: ${config.model}
+• API URL: ${config.apiUrl}
+
+API Keys Status:
+• Claude API: ${claudeApiKey ? '✅ Configured' : '❌ Not configured'}
+• OpenAI API: ${openaiApiKey ? '✅ Configured' : '❌ Not configured'}
+    `.trim();
+
+    const action = await vscode.window.showInformationMessage(
+      statusMessage,
+      'Configure Provider',
+      'Set Claude API Key',
+      'Set OpenAI API Key',
+      'Close'
+    );
+
+    switch (action) {
+      case 'Configure Provider':
+        await this.configureWizard(context);
+        break;
+      case 'Set Claude API Key':
+        await this.promptForApiKey(context);
+        break;
+      case 'Set OpenAI API Key':
+        await this.promptForOpenAIApiKey(context);
+        break;
+      default:
+        break;
+    }
+  }
+
   
+
+  // Check if provider has existing API key
+  async hasApiKeyForProvider(context: vscode.ExtensionContext, provider: 'claude' | 'openai'): Promise<boolean> {
+    if (provider === 'claude') {
+      const apiKey = await this.getApiKey(context);
+      return !!apiKey;
+    } else if (provider === 'openai') {
+      const apiKey = await this.getOpenAIApiKey(context);
+      return !!apiKey;
+    }
+    return false;
+  }
 
   // Show configuration wizard
   async configureWizard(context: vscode.ExtensionContext): Promise<void> {
+    const currentConfig = this.getConfig();
+    const currentProvider = currentConfig.provider;
+    
     const provider = await this.promptForProvider();
     if (!provider) {
       vscode.window.showWarningMessage('Configuration cancelled: No provider selected');
       return;
     }
 
+    // Check if we're switching providers
+    const isSwitchingProviders = provider !== currentProvider;
+    
     // Update provider setting
     await vscode.workspace.getConfiguration('claude-code').update('provider', provider, true);
 
-    // Configure API key based on provider
-    if (provider === 'claude') {
-      const apiKey = await this.promptForApiKey(context);
-      if (!apiKey) {
-        vscode.window.showWarningMessage('Configuration cancelled: No API key provided');
-        return;
+    // Check if API key already exists for the selected provider
+    const hasExistingKey = await this.hasApiKeyForProvider(context, provider);
+    
+    if (!hasExistingKey) {
+      // Only prompt for API key if it doesn't exist for this provider
+      if (provider === 'claude') {
+        const apiKey = await this.promptForApiKey(context);
+        if (!apiKey) {
+          vscode.window.showWarningMessage('Configuration cancelled: No API key provided');
+          return;
+        }
+      } else if (provider === 'openai') {
+        const apiKey = await this.promptForOpenAIApiKey(context);
+        if (!apiKey) {
+          vscode.window.showWarningMessage('Configuration cancelled: No API key provided');
+          return;
+        }
       }
-    } else if (provider === 'openai') {
-      const apiKey = await this.promptForOpenAIApiKey(context);
-      if (!apiKey) {
-        vscode.window.showWarningMessage('Configuration cancelled: No API key provided');
-        return;
-      }
+    } else {
+      // API key already exists for this provider
+      vscode.window.showInformationMessage(`Using existing ${provider === 'claude' ? 'Claude' : 'OpenAI'} API key`);
     }
 
     // Configure API URL for Claude (OpenAI uses fixed URL)
     if (provider === 'claude') {
-      const apiUrl = await this.promptForApiUrl();
-      if (!apiUrl) {
-        vscode.window.showWarningMessage('Configuration cancelled: No API URL provided');
-        return;
+      // Only prompt for API URL if it's the first time configuring Claude or if user wants to change it
+      if (!hasExistingKey || currentConfig.apiUrl === 'https://claude.monarchrise.dev') {
+        const apiUrl = await this.promptForApiUrl();
+        if (!apiUrl) {
+          vscode.window.showWarningMessage('Configuration cancelled: No API URL provided');
+          return;
+        }
       }
     }
 
+    const message = isSwitchingProviders 
+      ? `Switched to ${provider === 'claude' ? 'Claude' : 'OpenAI'} provider successfully!`
+      : 'Claude Code extension configured successfully!';
     
-
-    vscode.window.showInformationMessage('Claude Code extension configured successfully!');
+    vscode.window.showInformationMessage(message);
   }
 }
