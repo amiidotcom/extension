@@ -4,7 +4,7 @@
   "description": "Integrate Claude Code API with VSCode chat and tool access",
   "version": "1.0.0",
   "engines": {
-    "vscode": "^1.90.0"
+    "vscode": "^1.106.1"
   },
   "categories": [
     "Other"
@@ -113,6 +113,10 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "vscode-test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/amiidotcom/extension.git"
   },
   "devDependencies": {
     "@types/vscode": "^1.106.1",

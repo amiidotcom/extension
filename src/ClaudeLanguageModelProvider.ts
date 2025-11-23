@@ -36,9 +36,9 @@ export class ClaudeLanguageModelProvider implements vscode.LanguageModelChatProv
         detail: 'by Anthropic'
       },
       {
-        id: 'moonshotai/Kimi-K2-Thinking',
-        name: 'moonshotai/Kimi-K2-Thinking',
-        family: 'claude-3',
+        id: 'zai-org/GLM-4.6',
+        name: 'GLM 4.6',
+        family: 'zai-org',
         version: '2024-02-29',
         maxInputTokens: 200000,
         maxOutputTokens: 4096,
@@ -50,9 +50,9 @@ export class ClaudeLanguageModelProvider implements vscode.LanguageModelChatProv
         detail: 'by Anthropic'
       },
       {
-        id: 'moonshotai/Kimi-K2-Thinking',
-        name: 'moonshotai/Kimi-K2-Thinking',
-        family: 'claude-3',
+        id: 'Qwen/Qwen3-Coder-480B-A35B-Instruct-FP8',
+        name: 'Qwen 3 Coder',
+        family: 'qwen',
         version: '2024-03-07',
         maxInputTokens: 200000,
         maxOutputTokens: 4096,

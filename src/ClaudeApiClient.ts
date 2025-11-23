@@ -52,7 +52,7 @@ export class ClaudeApiClient {
     try {
       //console.log('[ClaudeApiClient] Making request to:', `${config.apiUrl}/v1/messages`);
       //console.log('[ClaudeApiClient] API Key starts with:', apiKey.substring(0, 8) + '...');
-      //console.log('[ClaudeApiClient] Model:', model);
+      console.log('[ClaudeApiClient] Model:', model);
       //console.log('[ClaudeApiClient] Tools enabled:', config.enableTools && tools && tools.length > 0);
       //console.log('[ClaudeApiClient] Request body:', JSON.stringify(request, null, 2));
 
