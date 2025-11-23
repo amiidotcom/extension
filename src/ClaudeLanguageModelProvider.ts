@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ClaudeApiClient } from './ClaudeApiClient';
+import { ApiProviderManager } from './ApiProviderManager';
 import { ClaudeMessage } from './types';
 
 export class ClaudeLanguageModelProvider implements vscode.LanguageModelChatProvider<vscode.LanguageModelChatInformation> {
@@ -9,7 +9,7 @@ export class ClaudeLanguageModelProvider implements vscode.LanguageModelChatProv
   private availableModels: vscode.LanguageModelChatInformation[] = [];
 
   constructor(
-    private apiClient: ClaudeApiClient
+    private apiProviderManager: ApiProviderManager
   ) {
     this.initializeModels();
   }
@@ -194,8 +194,8 @@ export class ClaudeLanguageModelProvider implements vscode.LanguageModelChatProv
       let isResolved = false;
       let streamedText = '';
 
-      // Pass the model ID to the API client
-      this.apiClient.chat(
+      // Pass the model ID to the API provider manager
+      this.apiProviderManager.chat(
         messages,
         undefined, // No tools - using VS Code native tools
         (chunk: string) => {
@@ -229,7 +229,7 @@ export class ClaudeLanguageModelProvider implements vscode.LanguageModelChatProv
 
       token.onCancellationRequested(() => {
         if (!isResolved) {
-          this.apiClient.cancel();
+          this.apiProviderManager.cancel();
           isResolved = true;
           reject(new Error('Request cancelled'));
         }

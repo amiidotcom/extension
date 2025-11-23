@@ -32,6 +32,26 @@
         "command": "claude-code.setApiKey",
         "title": "Set Claude API Key",
         "category": "Claude Code"
+      },
+      {
+        "command": "claude-code.setOpenAIApiKey",
+        "title": "Set OpenAI API Key (Chutes AI)",
+        "category": "Claude Code"
+      },
+      {
+        "command": "claude-code.switchProvider",
+        "title": "Switch API Provider",
+        "category": "Claude Code"
+      },
+      {
+        "command": "claude-code.showProviderStatus",
+        "title": "Show Provider Status",
+        "category": "Claude Code"
+      },
+      {
+        "command": "claude-code.debugProvider",
+        "title": "Debug Provider Detection",
+        "category": "Claude Code"
       }
     ],
     "configuration": {
@@ -101,6 +121,12 @@
           "default": "auto",
           "enum": ["auto", "any"],
           "description": "Control tool usage: auto = model decides, any = force tool use"
+        },
+        "claude-code.provider": {
+          "type": "string",
+          "default": "claude",
+          "enum": ["claude", "openai"],
+          "description": "API provider to use: claude or openai"
         }
         
       }

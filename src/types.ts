@@ -98,6 +98,8 @@ export interface ExtensionConfig {
   maxTokens: number;
   enableTools: boolean;
   apiKey?: string;
+  // Provider configuration
+  provider?: 'claude' | 'openai';
   // Optional parameters
   system?: string;
   temperature?: number;

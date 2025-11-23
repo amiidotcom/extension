@@ -30,6 +30,8 @@ Focus on completing the user's requests efficiently and effectively.`;
       model: config.get<string>('model', 'moonshotai/Kimi-K2-Thinking'),
       maxTokens: config.get<number>('maxTokens', 4096),
       enableTools: config.get<boolean>('enableTools', true),
+      // Provider configuration
+      provider: config.get<'claude' | 'openai'>('provider', 'claude'),
       // Optional parameters
       system: config.get<string>('system', defaultSystem),
       temperature: config.get<number>('temperature', 1.0),
@@ -116,20 +118,95 @@ Focus on completing the user's requests efficiently and effectively.`;
     return !!apiKey;
   }
 
+  // OpenAI API key management
+  async storeOpenAIApiKey(context: vscode.ExtensionContext, apiKey: string): Promise<void> {
+    await context.secrets.store('openai-api-key', apiKey);
+  }
+
+  async getOpenAIApiKey(context: vscode.ExtensionContext): Promise<string | undefined> {
+    return await context.secrets.get('openai-api-key');
+  }
+
+  async deleteOpenAIApiKey(context: vscode.ExtensionContext): Promise<void> {
+    await context.secrets.delete('openai-api-key');
+  }
+
+  async promptForOpenAIApiKey(context: vscode.ExtensionContext): Promise<string | undefined> {
+    const apiKey = await vscode.window.showInputBox({
+      prompt: 'Enter your OpenAI API Key (for Chutes AI)',
+      password: true,
+      ignoreFocusOut: true,
+      placeHolder: 'cpk_xxxxxx',
+      validateInput: (input) => {
+        if (!input || input.trim().length === 0) {
+          return 'API key cannot be empty';
+        }
+        if (!input.startsWith('cpk_')) {
+          return 'OpenAI API key should start with "cpk_"';
+        }
+        return null;
+      }
+    });
+
+    if (apiKey) {
+      await this.storeOpenAIApiKey(context, apiKey);
+      vscode.window.showInformationMessage('OpenAI API key saved securely!');
+    }
+
+    return apiKey;
+  }
+
+  // Provider configuration
+  async promptForProvider(): Promise<'claude' | 'openai' | undefined> {
+    const selection = await vscode.window.showQuickPick([
+      { label: 'Claude API', value: 'claude' as const },
+      { label: 'OpenAI API (Chutes AI)', value: 'openai' as const }
+    ], {
+      placeHolder: 'Select API provider',
+      ignoreFocusOut: true
+    });
+
+    return selection?.value;
+  }
+
+  
+
   // Show configuration wizard
   async configureWizard(context: vscode.ExtensionContext): Promise<void> {
-    const steps = [
-      { name: 'API Key', action: () => this.promptForApiKey(context) },
-      { name: 'API URL', action: () => this.promptForApiUrl() }
-    ];
+    const provider = await this.promptForProvider();
+    if (!provider) {
+      vscode.window.showWarningMessage('Configuration cancelled: No provider selected');
+      return;
+    }
 
-    for (const step of steps) {
-      const result = await step.action();
-      if (!result) {
-        vscode.window.showWarningMessage(`Configuration cancelled at ${step.name}`);
+    // Update provider setting
+    await vscode.workspace.getConfiguration('claude-code').update('provider', provider, true);
+
+    // Configure API key based on provider
+    if (provider === 'claude') {
+      const apiKey = await this.promptForApiKey(context);
+      if (!apiKey) {
+        vscode.window.showWarningMessage('Configuration cancelled: No API key provided');
+        return;
+      }
+    } else if (provider === 'openai') {
+      const apiKey = await this.promptForOpenAIApiKey(context);
+      if (!apiKey) {
+        vscode.window.showWarningMessage('Configuration cancelled: No API key provided');
         return;
       }
     }
+
+    // Configure API URL for Claude (OpenAI uses fixed URL)
+    if (provider === 'claude') {
+      const apiUrl = await this.promptForApiUrl();
+      if (!apiUrl) {
+        vscode.window.showWarningMessage('Configuration cancelled: No API URL provided');
+        return;
+      }
+    }
+
+    
 
     vscode.window.showInformationMessage('Claude Code extension configured successfully!');
   }

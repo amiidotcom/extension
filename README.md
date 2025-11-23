@@ -25,17 +25,33 @@ A VSCode extension that integrates Claude Code API with full tool access, allowi
 
 ## Features
 
-- **Chat Integration**: Chat with Claude directly in VSCode's chat panel
-- **Tool Access**: Claude can execute tools to interact with your workspace:
+- **Multi-Provider Support**: Support for both Claude API and OpenAI-compatible APIs
+- **Chat Integration**: Chat with AI models directly in VSCode's chat panel
+- **Tool Access**: AI models can execute tools to interact with your workspace:
   - **File Operations**: Read, write, edit, search files
   - **Terminal Commands**: Execute shell commands
   - **Git Operations**: Status, commit, push, branch management
   - **VSCode Integration**: Open files, run tasks, get/set selections
-- **Streaming Responses**: Real-time streaming of Claude's responses
-- **Advanced Tool Call Handling**: Parses embedded tool calls from Claude's responses
+- **Streaming Responses**: Real-time streaming of responses
+- **Advanced Tool Call Handling**: Parses embedded tool calls from AI responses
 - **Native VS Code Integration**: Uses VS Code's built-in language model and tool APIs
 - **Secure API Key Storage**: API keys stored in VSCode's secure secret storage
+- **Provider Switching**: Easy switching between different API providers
+- **Fallback Support**: Automatic fallback to secondary provider on errors
 - **Configurable**: Custom API endpoints and model selection
+
+## Supported Providers
+
+### Claude API
+- **Endpoint**: Custom Claude-compatible proxy (default: `https://claude.monarchrise.dev`)
+- **Models**: moonshotai/Kimi-K2-Thinking, MiniMaxAI/MiniMax-M2, zai-org/GLM-4.6
+- **Features**: Full tool support, streaming responses, thinking blocks
+
+### OpenAI API (Chutes AI)
+- **Endpoint**: `https://llm.chutes.ai/v1/chat/completions`
+- **Models**: OpenAI-compatible models (GPT-3.5, GPT-4, etc.)
+- **Features**: Tool calling support, streaming responses, vision capabilities (planned)
+- **API Key Format**: Standard OpenAI `sk-` keys
 
 ## Requirements
 
@@ -75,18 +91,52 @@ When you first activate the extension, you'll be prompted to configure it. You c
 
 Configure via VSCode Settings (`Settings > Claude Code`):
 
-- **`claude-code.apiUrl`**: Claude API proxy URL (default: `https://api.anthropic.com/v1`)
-- **`claude-code.model`**: Model to use (default: `claude-3-5-sonnet-latest`)
+#### Provider Settings
+- **`claude-code.provider`**: API provider to use (`claude` or `openai`, default: `claude`)
+
+#### Claude API Settings
+- **`claude-code.apiUrl`**: Claude API proxy URL (default: `https://claude.monarchrise.dev`)
+- **`claude-code.model`**: Model to use (default: `moonshotai/Kimi-K2-Thinking`)
+
+#### OpenAI API Settings
+- **Endpoint**: Fixed to `https://llm.chutes.ai/v1/chat/completions`
+- **API Key**: Set via `Claude Code: Set OpenAI API Key` command
+- **Models**: OpenAI-compatible models (configure in `claude-code.model` setting)
+
+#### General Settings
 - **`claude-code.maxTokens`**: Maximum tokens in responses (default: `4096`)
 - **`claude-code.enableTools`**: Enable VSCode tool execution (default: `true`)
+- **`claude-code.temperature`**: Controls randomness (0.0-1.0, default: `1.0`)
+- **`claude-code.system`**: Custom system prompt (optional)
 
 ### 3. API Key Setup
 
-Your API key is stored securely in VSCode's secret storage. Supported formats:
+Your API key is stored securely in VSCode's secret storage. 
+
+#### Claude API Key
+Run `Claude Code: Set Claude API Key` command or use the configuration wizard.
+Supported formats:
 
 - **Direct Anthropic API**: Get from [Anthropic Console](https://console.anthropic.com/)
-- **Claude Code Proxy**: Compatible proxy with Anthropic API format
+- **Claude Code Proxy**: Compatible proxy with Anthropic API format (starts with `cpk_`)
 - **AWS Bedrock**: If using AWS Bedrock with Claude
+
+#### OpenAI API Key (Chutes AI)
+Run `Claude Code: Set OpenAI API Key` command.
+- **Format**: Standard OpenAI API keys (starts with `sk-`)
+- **Endpoint**: Automatically uses `https://llm.chutes.ai/v1/chat/completions`
+
+### 4. Provider Management
+
+#### Switching Providers
+- Run `Claude Code: Switch API Provider` command
+- Or configure via settings: `claude-code.provider`
+
+#### Provider Status
+- Run `Claude Code: Show Provider Status` to see current configuration
+- Status bar shows current provider: `$(claude) Claude API` or `$(robot) OpenAI API`
+
+
 
 ## Usage
 
