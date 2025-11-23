@@ -91,7 +91,8 @@ export class OpenAIApiClient {
     tools?: ClaudeTool[],
     onStream?: (chunk: string) => void,
     modelId?: string,
-    onToolCall?: (toolCall: {id: string, name: string, input: any}) => void
+    onToolCall?: (toolCall: {id: string, name: string, input: any}) => void,
+    onThinking?: (thinking: string) => void
   ): Promise<ClaudeResponse> {
     const config = this.config.getConfig();
     const apiKey = await this.getOpenAIApiKey();
@@ -149,7 +150,7 @@ export class OpenAIApiClient {
       }
 
       if (onStream && response.body) {
-        return await this.handleStreamingResponse(response.body, onStream, onToolCall);
+        return await this.handleStreamingResponse(response.body, onStream, onToolCall, onThinking);
       } else {
         const data = await response.json() as OpenAIResponse;
         return this.convertOpenAIResponseToClaude(data);
@@ -305,7 +306,8 @@ export class OpenAIApiClient {
   private async handleStreamingResponse(
     body: ReadableStream<Uint8Array>,
     onStream: (chunk: string) => void,
-    onToolCall?: (toolCall: {id: string, name: string, input: any}) => void
+    onToolCall?: (toolCall: {id: string, name: string, input: any}) => void,
+    onThinking?: (thinking: string) => void
   ): Promise<ClaudeResponse> {
     const reader = body.getReader();
     const decoder = new TextDecoder();
@@ -342,22 +344,19 @@ export class OpenAIApiClient {
                 currentContent += choice.delta.content;
                 
                 // Add transition only once, before first main content (if we have thinking content)
-                if (wasEmpty && currentThinkingContent.length > 0) {
-                  onStream(`\n\n**Response:**\n`);
-                }
+               
                 onStream(choice.delta.content);
               }
 
               // Handle thinking/reasoning content
               if (choice.delta?.reasoning_content) {
-                const wasEmpty = currentThinkingContent.length === 0;
                 currentThinkingContent += choice.delta.reasoning_content;
                 
-                // Show thinking header only once, before first thinking content
-                if (wasEmpty) {
-                  onStream(`🤔 **Thinking Process:**\n`);
+                // Report thinking via separate callback
+                if (onThinking) {
+                  onThinking(choice.delta.reasoning_content);
                 }
-                onStream(choice.delta.reasoning_content);
+                // Don't stream thinking content to user directly - let the provider handle it
               }
 
               // Handle tool calls - hide from user stream, report via callback
@@ -433,13 +432,8 @@ export class OpenAIApiClient {
       throw new Error('No response received from streaming API');
     }
 
-    // Add thinking content properly formatted (if any)
-    if (currentThinkingContent) {
-      fullResponse.content.push({
-        type: 'text',
-        text: `🤔\n**Thinking Process:**\n${currentThinkingContent}\n\n\n`
-      });
-    }
+    // Thinking content is handled separately via onThinking callback
+    // Don't include it in the final response to avoid duplication
 
     // Add accumulated text content
     if (currentContent) {
@@ -477,7 +471,8 @@ export class OpenAIApiClient {
     messages: ClaudeMessage[],
     tools: ClaudeTool[],
     toolResults: ToolResult[],
-    onStream?: (chunk: string) => void
+    onStream?: (chunk: string) => void,
+    onThinking?: (thinking: string) => void
   ): Promise<ClaudeResponse> {
     // Add tool results to messages
     const messagesWithResults = [...messages];
@@ -496,7 +491,7 @@ export class OpenAIApiClient {
       }
     }
 
-    return this.chat(messagesWithResults, tools, onStream);
+    return this.chat(messagesWithResults, tools, onStream, undefined, undefined, onThinking);
   }
 
   async getOpenAIApiKey(): Promise<string | undefined> {

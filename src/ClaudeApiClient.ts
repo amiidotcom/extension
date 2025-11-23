@@ -13,7 +13,8 @@ export class ClaudeApiClient {
     tools?: ClaudeTool[],
     onStream?: (chunk: string) => void,
     modelId?: string,  // Optional model ID to override config
-    onToolCall?: (toolCall: {id: string, name: string, input: any}) => void
+    onToolCall?: (toolCall: {id: string, name: string, input: any}) => void,
+    onThinking?: (thinking: string) => void
   ): Promise<ClaudeResponse> {
     const config = this.config.getConfig();
     const apiKey = await this.config.getApiKey(this.context);
@@ -120,7 +121,7 @@ export class ClaudeApiClient {
       }
 
       if (onStream && response.body) {
-        return await this.handleStreamingResponse(response.body, onStream);
+        return await this.handleStreamingResponse(response.body, onStream, onThinking);
       } else {
         const data = await response.json();
         return data as ClaudeResponse;
@@ -135,7 +136,8 @@ export class ClaudeApiClient {
 
   private async handleStreamingResponse(
     body: ReadableStream<Uint8Array>,
-    onStream: (chunk: string) => void
+    onStream: (chunk: string) => void,
+    onThinking?: (thinking: string) => void
   ): Promise<ClaudeResponse> {
     const reader = body.getReader();
     const decoder = new TextDecoder();
@@ -190,16 +192,15 @@ export class ClaudeApiClient {
                     onStream(event.delta.text);
                   }
                 } else if (event.delta?.thinking) {
-                  // Handle thinking delta - show it in the response
+                  // Handle thinking delta - send via separate callback
                   if (currentBlock && currentBlock.type === 'thinking') {
                     currentBlock.text += event.delta.thinking;
                     
-                    // Show thinking blocks with a marker to distinguish from regular text
-                    if (!hasShownThinking) {
-                      onStream("\n🤔 **Thinking:**\n");
-                      hasShownThinking = true;
+                    // Report thinking via separate callback
+                    if (onThinking) {
+                      onThinking(event.delta.thinking);
                     }
-                    onStream(event.delta.thinking);
+                    // Don't stream thinking content to user directly - let the provider handle it
                   }
                 } else if (event.delta?.partial_json && currentBlock?.type === 'tool_use') {
                   // Handle tool use input JSON delta
@@ -331,7 +332,8 @@ export class ClaudeApiClient {
     messages: ClaudeMessage[],
     tools: ClaudeTool[],
     toolResults: ToolResult[],
-    onStream?: (chunk: string) => void
+    onStream?: (chunk: string) => void,
+    onThinking?: (thinking: string) => void
   ): Promise<ClaudeResponse> {
     // Add tool results to messages
     const messagesWithResults = [...messages];
@@ -348,6 +350,6 @@ export class ClaudeApiClient {
       messagesWithResults.push(toolResultContent as any);
     }
 
-    return this.chat(messagesWithResults, tools, onStream);
+    return this.chat(messagesWithResults, tools, onStream, undefined, undefined, onThinking);
   }
 }

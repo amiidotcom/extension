@@ -228,6 +228,22 @@ export class ClaudeLanguageModelProvider implements vscode.LanguageModelChatProv
           });
           
           progress.report(toolCallPart);
+        },
+        // Thinking callback - report thinking content as LanguageModelThinkingPart
+        (thinking: string) => {
+          console.log('[Claude Provider] Thinking content detected:', thinking.substring(0, 100) + '...');
+          
+          // Generate a unique ID for this thinking sequence
+          const thinkingId = `thinking_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
+          
+          // Report thinking content as LanguageModelThinkingPart
+          // Note: LanguageModelThinkingPart is a proposed API, may need type assertion
+          const thinkingPart = new (vscode as any).LanguageModelThinkingPart(
+            thinking,
+            thinkingId, // Optional unique identifier
+            { timestamp: Date.now(), model: modelId } // Optional metadata
+          );
+          progress.report(thinkingPart);
         }
       ).then((response: any) => {
         if (!isResolved) {
