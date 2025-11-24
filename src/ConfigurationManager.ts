@@ -26,7 +26,7 @@ Guidelines for tool usage:
 Focus on completing the user's requests efficiently and effectively.`;
     
     return {
-      apiUrl: config.get<string>('apiUrl', 'https://claude.monarchrise.dev'),
+      apiUrl: config.get<string>('apiUrl', 'https://claude.chutes.ai/'),
       model: config.get<string>('model', 'moonshotai/Kimi-K2-Thinking'),
       maxTokens: config.get<number>('maxTokens', 4096),
       enableTools: config.get<boolean>('enableTools', true),
@@ -90,7 +90,7 @@ Focus on completing the user's requests efficiently and effectively.`;
     const apiUrl = await vscode.window.showInputBox({
       prompt: 'Enter Claude API Proxy URL',
       ignoreFocusOut: true,
-      placeHolder: 'https://claude.monarchrise.dev',
+      placeHolder: 'https://claude.chutes.ai/',
       value: config.apiUrl,
       validateInput: (input) => {
         if (!input || input.trim().length === 0) {
@@ -159,7 +159,7 @@ Focus on completing the user's requests efficiently and effectively.`;
   // Provider configuration
   async promptForProvider(): Promise<'claude' | 'openai' | undefined> {
     const selection = await vscode.window.showQuickPick([
-      { label: 'Claude API', value: 'claude' as const },
+      { label: 'Claude API (Chutes AI)', value: 'claude' as const },
       { label: 'OpenAI API (Chutes AI)', value: 'openai' as const }
     ], {
       placeHolder: 'Select API provider',
@@ -182,8 +182,8 @@ Current Configuration:
 • API URL: ${config.apiUrl}
 
 API Keys Status:
-• Claude API: ${claudeApiKey ? '✅ Configured' : '❌ Not configured'}
-• OpenAI API: ${openaiApiKey ? '✅ Configured' : '❌ Not configured'}
+• Claude API (Chutes AI): ${claudeApiKey ? '✅ Configured' : '❌ Not configured'}
+• OpenAI API (Chutes AI): ${openaiApiKey ? '✅ Configured' : '❌ Not configured'}
     `.trim();
 
     const action = await vscode.window.showInformationMessage(
@@ -266,7 +266,7 @@ API Keys Status:
     // Configure API URL for Claude (OpenAI uses fixed URL)
     if (provider === 'claude') {
       // Only prompt for API URL if it's the first time configuring Claude or if user wants to change it
-      if (!hasExistingKey || currentConfig.apiUrl === 'https://claude.monarchrise.dev') {
+      if (!hasExistingKey || currentConfig.apiUrl === 'https://claude.chutes.ai/') {
         const apiUrl = await this.promptForApiUrl();
         if (!apiUrl) {
           vscode.window.showWarningMessage('Configuration cancelled: No API URL provided');

@@ -122,3 +122,25 @@ export interface ToolContext {
   activeFile?: string;
   selection?: vscode.Selection;
 }
+
+// Quota Usage Types
+export interface QuotaUsage {
+  chute_id: string;
+  usage: {
+    current: number;
+    limit: number;
+    percentage: number;
+  };
+  period?: {
+    start?: string;
+    end?: string;
+  };
+  last_updated: string;
+}
+
+export interface QuotaStatus {
+  isLoaded: boolean;
+  quota?: QuotaUsage;
+  error?: string;
+  lastChecked?: Date;
+}

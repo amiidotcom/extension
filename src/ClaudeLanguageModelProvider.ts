@@ -1,16 +1,20 @@
 import * as vscode from 'vscode';
 import { ApiProviderManager } from './ApiProviderManager';
 import { ClaudeMessage } from './types';
+import { QuotaService } from './QuotaService';
 
 export class ClaudeLanguageModelProvider implements vscode.LanguageModelChatProvider<vscode.LanguageModelChatInformation> {
   private _onDidChangeLanguageModelChatInformation = new vscode.EventEmitter<void>();
   public readonly onDidChangeLanguageModelChatInformation = this._onDidChangeLanguageModelChatInformation.event;
 
   private availableModels: vscode.LanguageModelChatInformation[] = [];
+  private quotaService: QuotaService;
 
   constructor(
-    private apiProviderManager: ApiProviderManager
+    private apiProviderManager: ApiProviderManager,
+    private context?: vscode.ExtensionContext
   ) {
+    this.quotaService = QuotaService.getInstance();
     this.initializeModels();
   }
 
@@ -73,6 +77,15 @@ export class ClaudeLanguageModelProvider implements vscode.LanguageModelChatProv
     // Log for debugging - helps determine if Copilot is requesting models
     console.log('[Claude Provider] provideLanguageModelChatInformation called with options:', options);
 
+    // Fetch quota when provider information is requested (e.g., when switching providers)
+    if (this.context && !options.silent) {
+      const currentProvider = this.apiProviderManager.getCurrentProvider();
+      // Note: We don't await this to avoid blocking the response
+      this.quotaService.fetchQuotaUsage(this.context, currentProvider).catch(error => {
+        console.log('[Claude Provider] Background quota fetch failed in provideLanguageModelChatInformation:', error);
+      });
+    }
+
     return this.availableModels;
   }
 
@@ -86,6 +99,15 @@ export class ClaudeLanguageModelProvider implements vscode.LanguageModelChatProv
     console.log('[Claude Provider] provideLanguageModelChatResponse called for model:', model.id);
     console.log('[Claude Provider] Messages:', messages.length);
     console.log('[Claude Provider] Options:', options);
+
+    // Fetch quota immediately when the extension is utilized
+    if (this.context) {
+      const currentProvider = this.apiProviderManager.getCurrentProvider();
+      // Note: We don't await this to avoid blocking the response
+      this.quotaService.fetchQuotaUsage(this.context, currentProvider).catch(error => {
+        console.log('[Claude Provider] Background quota fetch failed:', error);
+      });
+    }
 
     try {
       // Convert VSCode messages to Claude format

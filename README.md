@@ -43,7 +43,7 @@ A VSCode extension that integrates Claude Code API with full tool access, allowi
 ## Supported Providers
 
 ### Claude API
-- **Endpoint**: Custom Claude-compatible proxy (default: `https://claude.monarchrise.dev`)
+- **Endpoint**: Custom Claude-compatible proxy (default: `https://claude.chutes.ai`)
 - **Models**: moonshotai/Kimi-K2-Thinking, MiniMaxAI/MiniMax-M2, zai-org/GLM-4.6
 - **Features**: Full tool support, streaming responses, thinking blocks
 
@@ -95,7 +95,7 @@ Configure via VSCode Settings (`Settings > Claude Code`):
 - **`claude-code.provider`**: API provider to use (`claude` or `openai`, default: `claude`)
 
 #### Claude API Settings
-- **`claude-code.apiUrl`**: Claude API proxy URL (default: `https://claude.monarchrise.dev`)
+- **`claude-code.apiUrl`**: Claude API proxy URL (default: `https://claude.chutes.ai/`)m
 - **`claude-code.model`**: Model to use (default: `moonshotai/Kimi-K2-Thinking`)
 
 #### OpenAI API Settings

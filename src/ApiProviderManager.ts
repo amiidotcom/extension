@@ -86,7 +86,7 @@ export class ApiProviderManager {
   getProviderName(): string {
     switch (this.currentProvider) {
       case 'claude':
-        return 'Claude API';
+        return 'Claude API (Chutes AI)';
       case 'openai':
         return 'OpenAI API (Chutes AI)';
       default:

@@ -1,8 +1,10 @@
 {
-  "name": "claude-code-vscode",
-  "displayName": "Claude Code for VSCode",
-  "description": "Integrate Claude Code API with VSCode chat and tool access",
+  "name": "chutes-claude-openai",
+  "displayName": "Chutes Claude/OpenAI for VSCode",
+  "description": "Intergrate Chutes.ai Claude and OpenAI APIs with VSCode chat and tool access",
   "version": "1.0.0",
+  "publisher": "IzzKetamBola",
+  "icon": "media/icon.png",
   "engines": {
     "vscode": "^1.106.1"
   },
@@ -19,7 +21,7 @@
         "displayName": "Chutes",
         "vendor": "chutes",
         "label": "Claude via Chutes.ai",
-        "icon": "media/claude-icon.png"
+        "icon": "media/icon.png"
       }
     ],
     "commands": [
@@ -57,14 +59,24 @@
         "command": "claude-code.showConfigurationStatus",
         "title": "Show Configuration Status",
         "category": "Claude Code"
+      },
+      {
+        "command": "claude-code.refreshQuota",
+        "title": "Refresh Quota Usage",
+        "category": "Claude Code"
+      },
+      {
+        "command": "claude-code.toggleQuotaDisplay",
+        "title": "Toggle Quota Display",
+        "category": "Claude Code"
       }
     ],
     "configuration": {
-      "title": "Claude Code",
+      "title": "Chutes Claude/OpenAI",
       "properties": {
         "claude-code.apiUrl": {
           "type": "string",
-          "default": "https://claude.monarchrise.dev",
+          "default": "https://claude.chutes.ai/",
           "description": "Claude API proxy URL"
         },
         "claude-code.model": {
@@ -143,12 +155,18 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
-    "test": "vscode-test"
+    "test": "vscode-test",
+     "package": "vsce package"
   },
   "repository": {
     "type": "git",
     "url": "https://github.com/amiidotcom/extension.git"
   },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/amiidotcom/extension/issues"
+  },
+  "homepage": "https://github.com/amiidotcom/extension#readme",
   "devDependencies": {
     "@types/vscode": "^1.106.1",
     "@types/node": "20.x",

@@ -58,12 +58,21 @@ export class ClaudeApiClient {
       //console.log('[ClaudeApiClient] Tools enabled:', config.enableTools && tools && tools.length > 0);
       //console.log('[ClaudeApiClient] Request body:', JSON.stringify(request, null, 2));
 
+      // Add thinking header for zai-org/GLM-4.6 model only
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      };
+
+      // Enable thinking only for zai-org/GLM-4.6 model
+      if (model === 'zai-org/GLM-4.6') {
+        headers['X-Enable-Thinking'] = 'true';
+        console.log('[ClaudeApiClient] Enabling thinking mode for model:', model);
+      }
+
       const response = await fetch(`${config.apiUrl}/v1/messages`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
+        headers: headers,
         body: JSON.stringify(request)
       });
 
@@ -89,12 +98,21 @@ export class ClaudeApiClient {
 
        // console.log('[ClaudeApiClient] Retry request body:', JSON.stringify(requestWithoutTools, null, 2));
 
+        // Add thinking header for zai-org/GLM-4.6 model only (retry request)
+        const retryHeaders: Record<string, string> = {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        };
+
+        // Enable thinking only for zai-org/GLM-4.6 model
+        if (model === 'zai-org/GLM-4.6') {
+          retryHeaders['X-Enable-Thinking'] = 'true';
+          console.log('[ClaudeApiClient] Enabling thinking mode for model (retry):', model);
+        }
+
         const retryResponse = await fetch(`${config.apiUrl}/v1/messages`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`
-          },
+          headers: retryHeaders,
           body: JSON.stringify(requestWithoutTools)
         });
 

@@ -2,24 +2,44 @@ import * as vscode from 'vscode';
 import { ClaudeLanguageModelProvider } from './ClaudeLanguageModelProvider';
 import { ApiProviderManager } from './ApiProviderManager';
 import { ConfigurationManager } from './ConfigurationManager';
+import { QuotaService } from './QuotaService';
 
 let providerRegistration: vscode.Disposable | undefined;
 let statusBarItem: vscode.StatusBarItem | undefined;
+let quotaService: QuotaService;
 
 // Helper function to update status bar
-function updateStatusBar(statusBar: vscode.StatusBarItem, providerManager: ApiProviderManager) {
+function updateStatusBar(statusBar: vscode.StatusBarItem, providerManager: ApiProviderManager, showQuota: boolean = true) {
   const providerName = providerManager.getProviderName();
-  const providerIcon = providerManager.getCurrentProvider() === 'claude' ? '$(claude)' : '$(robot)';
-  statusBar.text = `${providerIcon} ${providerName}`;
-  statusBar.tooltip = `${providerName} - Click to configure or switch provider`;
+  const currentProvider = providerManager.getCurrentProvider();
+  // Using a more appropriate icon for the extension
+  const providerIcon = currentProvider === 'claude' ? '$(sparkle)' : '$(robot)';
+  
+  let statusText = `${providerIcon} ${providerName}`;
+  let tooltipText = `${providerName} - Click to configure or switch provider`;
+  
+  // Add quota information if available and requested
+  if (showQuota && quotaService) {
+    const quotaDisplay = quotaService.getQuotaDisplayString(currentProvider);
+    const quotaTooltip = quotaService.getQuotaTooltip(currentProvider);
+    
+    statusText += ` ${quotaDisplay}`;
+    tooltipText += '\n\n' + quotaTooltip;
+  }
+  
+  statusBar.text = statusText;
+  statusBar.tooltip = tooltipText;
 }
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log('Claude Code Language Model Provider is now active!');
+  console.log('Chutes Code Language Model Provider is now active!');
 
   // Initialize API provider manager
   const apiProviderManager = ApiProviderManager.getInstance();
   apiProviderManager.initialize(context);
+
+  // Initialize quota service
+  quotaService = QuotaService.getInstance();
 
   // Create status bar item
   statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
@@ -27,24 +47,31 @@ export function activate(context: vscode.ExtensionContext) {
   updateStatusBar(statusBarItem, apiProviderManager);
   statusBarItem.show();
 
-  // Check configuration
+  // Check configuration and start quota monitoring
   const configManager = ConfigurationManager.getInstance();
   configManager.isConfigured(context).then(isConfigured => {
     if (!isConfigured) {
-      statusBarItem!.text = '$(claude) Claude Code (Not Configured)';
+      statusBarItem!.text = '$(sparkle) Chutes Code (Not Configured)';
       vscode.window.showWarningMessage(
-        'Claude Code extension is not configured. Please set your API key.',
+        'Chutes Code extension is not configured. Please set your API key.',
         'Configure Now'
       ).then(selection => {
         if (selection === 'Configure Now') {
           vscode.commands.executeCommand('claude-code.configure');
         }
       });
+    } else {
+      // Start quota monitoring for the current provider
+      const currentProvider = apiProviderManager.getCurrentProvider();
+      quotaService.startAutoUpdate(context, currentProvider);
+      
+      // Initial status bar update with quota
+      updateStatusBar(statusBarItem!, apiProviderManager);
     }
   });
 
   // Register Claude as a Language Model Provider
-  const provider = new ClaudeLanguageModelProvider(apiProviderManager);
+  const provider = new ClaudeLanguageModelProvider(apiProviderManager, context);
 
   providerRegistration = vscode.lm.registerLanguageModelChatProvider(
     'chutes',
@@ -69,7 +96,7 @@ export function activate(context: vscode.ExtensionContext) {
     
     const selection = await vscode.window.showQuickPick(
       availableProviders.map(provider => ({
-        label: provider === 'claude' ? '$(claude) Claude API' : '$(robot) OpenAI API (Chutes AI)',
+        label: provider === 'claude' ? '$(claude) Claude API (Chutes AI)' : '$(robot) OpenAI API (Chutes AI)',
         value: provider,
         description: provider === currentProvider ? 'Current' : undefined
       })),
@@ -82,6 +109,14 @@ export function activate(context: vscode.ExtensionContext) {
     if (selection && selection.value !== currentProvider) {
       try {
         await apiProviderManager.switchProvider(selection.value);
+        
+        // Stop quota monitoring for old provider and start for new provider
+        quotaService.stopAutoUpdate();
+        quotaService.startAutoUpdate(context, selection.value);
+        
+        // Also fetch quota immediately for the new provider
+        await quotaService.refreshQuota(context, selection.value);
+        
         updateStatusBar(statusBarItem!, apiProviderManager);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Unknown error';
@@ -136,13 +171,34 @@ Provider Status:
     await configManager.showConfigurationStatus(context);
   });
 
+  const refreshQuotaCommand = vscode.commands.registerCommand('claude-code.refreshQuota', async () => {
+    const currentProvider = apiProviderManager.getCurrentProvider();
+    await quotaService.refreshQuota(context, currentProvider);
+    updateStatusBar(statusBarItem!, apiProviderManager);
+    vscode.window.showInformationMessage(`Quota refreshed for ${currentProvider}`);
+  });
+
+  const toggleQuotaDisplayCommand = vscode.commands.registerCommand('claude-code.toggleQuotaDisplay', async () => {
+    // This could be used to show/hide quota in status bar if needed
+    updateStatusBar(statusBarItem!, apiProviderManager);
+  });
+
   // Watch for configuration changes
-  const configChangeSubscription = vscode.workspace.onDidChangeConfiguration(e => {
+  const configChangeSubscription = vscode.workspace.onDidChangeConfiguration(async e => {
     if (e.affectsConfiguration('claude-code')) {
-      console.log('Claude Code configuration changed');
+      console.log('Chutes Code configuration changed');
       // Refresh provider from configuration
       apiProviderManager.refreshProviderFromConfig();
-      // Update status bar to reflect current provider
+      
+      // Restart quota monitoring with new provider
+      const currentProvider = apiProviderManager.getCurrentProvider();
+      quotaService.stopAutoUpdate();
+      quotaService.startAutoUpdate(context, currentProvider);
+      
+      // Also fetch quota immediately
+      await quotaService.refreshQuota(context, currentProvider);
+      
+      // Update status bar to reflect current provider and quota
       updateStatusBar(statusBarItem!, apiProviderManager);
     }
   });
@@ -158,14 +214,21 @@ Provider Status:
     showProviderStatusCommand,
     debugProviderCommand,
     showConfigurationStatusCommand,
+    refreshQuotaCommand,
+    toggleQuotaDisplayCommand,
     configChangeSubscription
   );
 
-  console.log('Claude Code Language Model Provider activated successfully!');
+  console.log('Chutes Code Language Model Provider activated successfully!');
 }
 
 export function deactivate() {
-  console.log('Claude Code Language Model Provider is deactivated');
+  console.log('Chutes Code Language Model Provider is deactivated');
+
+  // Clean up quota service
+  if (quotaService) {
+    quotaService.stopAutoUpdate();
+  }
 
   // Clean up status bar
   if (statusBarItem) {

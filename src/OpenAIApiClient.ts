@@ -131,12 +131,21 @@ export class OpenAIApiClient {
       console.log('[OpenAIApiClient] Model:', model);
       console.log('[OpenAIApiClient] Tools enabled:', !!(openaiTools && openaiTools.length > 0));
 
+      // Add thinking header for zai-org/GLM-4.6 model only
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      };
+
+      // Enable thinking only for zai-org/GLM-4.6 model
+      if (model === 'zai-org/GLM-4.6') {
+        headers['X-Enable-Thinking'] = 'true';
+        console.log('[OpenAIApiClient] Enabling thinking mode for model:', model);
+      }
+
       const response = await fetch('https://llm.chutes.ai/v1/chat/completions', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
-        },
+        headers: headers,
         body: JSON.stringify(request),
         signal: this.abortController.signal
       });
